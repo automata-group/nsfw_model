@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>استوديو تصفية وتصنيف المحتوى المعترض | Human Curation Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #090d16;
+      --card-bg: rgba(18, 24, 38, 0.85);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --primary: #6366f1;
+      --primary-glow: rgba(99, 102, 241, 0.35);
+      --success: #10b981;
+      --success-glow: rgba(16, 185, 129, 0.3);
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --text: #f3f4f6;
+      --text-muted: #9ca3af;
+      --font-sans: 'Cairo', system-ui, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: var(--font-sans); }
+    body {
+      background: radial-gradient(circle at 50% 0%, #171f38 0%, var(--bg) 85%);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 1.5rem;
+    }
+    .container { max-width: 1400px; margin: 0 auto; }
+    
+    /* Header */
+    .header {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 1.5rem 2rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1.25rem;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+    .title-box h1 { font-size: 1.8rem; font-weight: 800; color: #fff; }
+    .title-box p { color: var(--text-muted); font-size: 0.95rem; margin-top: 0.25rem; }
+    
+    .actions { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; }
+    .btn {
+      padding: 0.7rem 1.4rem;
+      border-radius: 10px;
+      border: none;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 0.95rem;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      text-decoration: none;
+    }
+    .btn-retrain {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: #fff;
+      box-shadow: 0 4px 20px rgba(16,185,129,0.4);
+      font-size: 1.05rem;
+      padding: 0.8rem 1.6rem;
+    }
+    .btn-retrain:hover { transform: translateY(-2px); filter: brightness(1.15); box-shadow: 0 6px 25px rgba(16,185,129,0.6); }
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+      border: 1px solid var(--card-border);
+    }
+    .btn-secondary:hover { background: rgba(255, 255, 255, 0.15); }
+
+    /* Stats Bar */
+    .stats-bar {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .stat-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 1.2rem;
+      text-align: center;
+      transition: all 0.2s;
+    }
+    .stat-title { font-size: 0.85rem; color: var(--text-muted); font-weight: 600; }
+    .stat-val { font-size: 2rem; font-weight: 800; font-family: var(--font-mono); margin-top: 0.25rem; color: #fff; }
+
+    /* Filters Bar */
+    .filter-tabs {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .tab-btn {
+      padding: 0.6rem 1.2rem;
+      border-radius: 9999px;
+      border: 1px solid var(--card-border);
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text-muted);
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+    }
+    .tab-btn:hover { color: #fff; border-color: rgba(255,255,255,0.2); }
+    .tab-btn.active {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+      box-shadow: 0 0 15px var(--primary-glow);
+    }
+
+    /* Cards Grid */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 2rem;
+    }
+    .item-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+    .item-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 30px rgba(0,0,0,0.6);
+      border-color: rgba(255,255,255,0.2);
+    }
+    .item-card.curated {
+      border-color: var(--success);
+      box-shadow: 0 0 15px rgba(16,185,129,0.25);
+    }
+
+    .img-wrapper {
+      width: 100%;
+      height: 220px;
+      background: #05070d;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .img-wrapper img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+    .flag-badge {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      padding: 0.25rem 0.65rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      backdrop-filter: blur(8px);
+    }
+    .badge-intercepted { background: rgba(239, 68, 68, 0.85); color: #fff; }
+    .badge-leaked { background: rgba(245, 158, 11, 0.85); color: #fff; }
+    .badge-ok { background: rgba(16, 185, 129, 0.85); color: #fff; }
+
+    .card-body {
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      flex: 1;
+    }
+    .meta-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.85rem;
+    }
+    .model-pred {
+      font-weight: 700;
+      color: #a5b4fc;
+    }
+    .curated-badge {
+      font-size: 0.8rem;
+      padding: 0.2rem 0.6rem;
+      border-radius: 6px;
+      background: rgba(16, 185, 129, 0.2);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      font-weight: 700;
+    }
+
+    /* Action Buttons */
+    .action-group {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.4rem;
+      margin-top: auto;
+    }
+    .action-btn {
+      padding: 0.45rem 0.5rem;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: 600;
+      transition: all 0.15s ease;
+      text-align: center;
+    }
+    .action-btn:hover {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+    .action-btn.active {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+      box-shadow: 0 0 10px var(--primary-glow);
+    }
+    .btn-full { grid-column: span 2; }
+
+    /* Pagination */
+    .pagination {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+
+    /* Toast Notification */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: rgba(16, 185, 129, 0.95);
+      color: #fff;
+      padding: 1rem 2rem;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 1.05rem;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      backdrop-filter: blur(8px);
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <div class="title-box">
+        <div style="display: inline-block; background: rgba(99,102,241,0.2); border: 1px solid rgba(99,102,241,0.4); padding: 0.25rem 0.8rem; border-radius: 9999px; font-size: 0.8rem; color: #a5b4fc; margin-bottom: 0.5rem;">
+          🎯 منصة التصفية والتدقيق البصري اليدوي (Human-in-the-Loop Studio)
+        </div>
+        <h1>استوديو تصفية وتصنيف المحتوى المعترض</h1>
+        <p>راجع الصور المعترضة أو المشتبه بها وصنفها بيدك، ثم انقر على إعادة التدريب لضبط أوزان النموذج فوراً.</p>
+      </div>
+      <div class="actions">
+        <button class="btn btn-retrain" id="retrain-btn" onclick="executeRetrain()">
+          ⚡ إعادة تدريب النموذج بقراراتك فوراً
+        </button>
+        <a href="/" class="btn btn-secondary">🏠 الرئيسية</a>
+      </div>
+    </header>
+
+    <!-- Stats Bar -->
+    <div class="stats-bar">
+      <div class="stat-card">
+        <div class="stat-title">إجمالي الصور المعترضة / المشتبه بها</div>
+        <div class="stat-val" id="stat-total">--</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-title">تمت تصفيتها واعتمادها بيدك</div>
+        <div class="stat-val" style="color: #34d399;" id="stat-curated">--</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-title">بانتظار تدقيقك اليدوي</div>
+        <div class="stat-val" style="color: #f59e0b;" id="stat-pending">--</div>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filter-tabs">
+      <button class="tab-btn active" onclick="setFilter('all', this)">📌 الكل</button>
+      <button class="tab-btn" onclick="setFilter('intercepted_safe', this)">🚨 معترضة كـ NSFW (وهي آمنة)</button>
+      <button class="tab-btn" onclick="setFilter('leaked_nsfw', this)">⚠️ مسربة (غير آمنة وتم تمريرها)</button>
+      <button class="tab-btn" onclick="setFilter('pending', this)">⏳ بانتظار الفرز</button>
+      <button class="tab-btn" onclick="setFilter('curated', this)">✅ تم تدقيقها وتصفيتها</button>
+    </div>
+
+    <!-- Items Grid -->
+    <div class="grid" id="items-grid">
+      <div style="grid-column: 1/-1; text-align: center; padding: 4rem; color: var(--text-muted);">
+        جاري تحميل عناصر الفرز من الذاكرة...
+      </div>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination">
+      <button class="btn btn-secondary" id="prev-page" onclick="changePage(-1)">السابق</button>
+      <span id="page-info" style="font-weight: 700; color: #a5b4fc;">صفحة 1 من 1</span>
+      <button class="btn btn-secondary" id="next-page" onclick="changePage(1)">التالي</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast">
+    <span>✅ تم حفظ القرار بنجاح!</span>
+  </div>
+
+  <script>
+    let currentPage = 1;
+    let currentFilter = 'all';
+
+    const CAT_ARABIC = {
+      'drawings': '🎨 كرتون / رسم آمن',
+      'neutral': '🌿 صورة عادية آمنة',
+      'sexy': '👙 إيحاء / ملابس سباحة',
+      'porn': '🔞 إباحي واقعي',
+      'hentai': '🔞 إباحي كرتوني'
+    };
+
+    async function loadItems() {
+      try {
+        const res = await fetch(`/api/curator/items?page=${currentPage}&filter=${currentFilter}`);
+        const data = await res.json();
+        
+        document.getElementById('stat-total').textContent = data.stats.total_candidates;
+        document.getElementById('stat-curated').textContent = data.stats.curated_count;
+        document.getElementById('stat-pending').textContent = data.stats.pending_count;
+        document.getElementById('page-info').textContent = `صفحة ${data.page} من ${data.total_pages}`;
+
+        document.getElementById('prev-page').disabled = (data.page <= 1);
+        document.getElementById('next-page').disabled = (data.page >= data.total_pages);
+
+        renderGrid(data.items);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    function renderGrid(items) {
+      const grid = document.getElementById('items-grid');
+      if (!items || items.length === 0) {
+        grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 4rem; color: var(--text-muted);">لا توجد صور مطابقة لهذا الفلتر حالياً.</div>';
+        return;
+      }
+
+      grid.innerHTML = items.map(it => {
+        let badgeHtml = '';
+        if (it.is_intercepted_safe) {
+          badgeHtml = '<span class="flag-badge badge-intercepted">حجب خاطئ محتمل</span>';
+        } else if (it.is_leaked_nsfw) {
+          badgeHtml = '<span class="flag-badge badge-leaked">تسريب محتمل</span>';
+        }
+
+        const isCurated = (it.status === 'curated');
+        const curatedTag = isCurated ? `<span class="curated-badge">✅ ${CAT_ARABIC[it.curated_category] || it.curated_category}</span>` : '';
+
+        return `
+          <div class="item-card ${isCurated ? 'curated' : ''}" id="card-${escapeHtml(it.id)}">
+            <div class="img-wrapper">
+              <img src="${it.img_url}" loading="lazy" alt="Image">
+              ${badgeHtml}
+            </div>
+            <div class="card-body">
+              <div class="meta-row">
+                <span class="model-pred">المحرك: ${it.predicted} (${(it.confidence * 100).toFixed(0)}%)</span>
+                ${curatedTag}
+              </div>
+              <div style="font-size: 0.75rem; color: var(--text-muted); font-family: var(--font-mono); direction: ltr; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                ${it.filename}
+              </div>
+
+              <div class="action-group">
+                <button class="action-btn ${it.curated_category === 'drawings' ? 'active' : ''}" onclick="setLabel('${escapeJs(it.id)}', 'drawings')">🎨 كرتون آمن</button>
+                <button class="action-btn ${it.curated_category === 'neutral' ? 'active' : ''}" onclick="setLabel('${escapeJs(it.id)}', 'neutral')">🌿 صورة عادية</button>
+                <button class="action-btn ${it.curated_category === 'sexy' ? 'active' : ''}" onclick="setLabel('${escapeJs(it.id)}', 'sexy')">👙 إيحاء / سباحة</button>
+                <button class="action-btn ${it.curated_category === 'porn' ? 'active' : ''}" onclick="setLabel('${escapeJs(it.id)}', 'porn')">🔞 إباحي واقعي</button>
+                <button class="action-btn btn-full ${it.curated_category === 'hentai' ? 'active' : ''}" onclick="setLabel('${escapeJs(it.id)}', 'hentai')">🔞 إباحي كرتوني (Hentai)</button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function setLabel(itemId, cat) {
+      try {
+        const res = await fetch('/api/curator/label', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ item_id: itemId, category: cat })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast(`✅ تم اعتماد التصنيف: ${CAT_ARABIC[cat] || cat}`);
+          loadItems();
+        }
+      } catch (err) {
+        showToast('❌ حدث خطأ أثناء الحفظ');
+      }
+    }
+
+    async function executeRetrain() {
+      const btn = document.getElementById('retrain-btn');
+      btn.disabled = true;
+      btn.innerHTML = '⏳ جاري حل معادلات RLS وإعادة تدريب النموذج...';
+
+      try {
+        const res = await fetch('/api/curator/retrain', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+          showToast(`🎉 تم تدريب وتحديث النموذج بنجاح بدقة ${data.accuracy}% في ${data.elapsed_seconds} ثانية!`);
+        } else {
+          showToast(`❌ فشل التدريب: ${data.error}`);
+        }
+      } catch (err) {
+        showToast('❌ تعذر الاتصال بالخادم أثناء التدريب');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '⚡ إعادة تدريب النموذج بقراراتك فوراً';
+      }
+    }
+
+    function setFilter(filt, el) {
+      currentFilter = filt;
+      currentPage = 1;
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      el.classList.add('active');
+      loadItems();
+    }
+
+    function changePage(delta) {
+      currentPage += delta;
+      loadItems();
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.innerHTML = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 3500);
+    }
+
+    function escapeHtml(str) {
+      return String(str).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[m]);
+    }
+
+    function escapeJs(str) {
+      return String(str).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    }
+
+    // Initial load
+    loadItems();
+  </script>
+</body>
+</html>

@@ -15,6 +15,7 @@ import urllib.parse
 from PIL import Image
 from nsfw_classifier import ProductionNSFWClassifier
 from decision_agent import DecisionAgent
+from curation_studio import studio_engine
 
 PORT = 8765
 classifier = None
@@ -343,8 +344,11 @@ HTML_PAGE = """<!DOCTYPE html>
       <div class="badge-chip">⚡ استدلال مباشر على المعالج المركزي (Production PP-LCNet)</div>
       <h1>فاحص المحتوى الحساس الفائق (5 فئات)</h1>
       <p class="subtitle">فحص دقيق وسريع يرسل الصورة إلى محرك الـ ONNX المحلي مباشرة</p>
-      <div style="margin-top: 1rem;">
-        <a href="/downloads" style="display: inline-block; background: #6366f1; color: white; padding: 0.6rem 1.4rem; border-radius: 9999px; text-decoration: none; font-weight: 700; font-size: 0.95rem; box-shadow: 0 4px 14px rgba(99,102,241,0.4);">
+      <div style="margin-top: 1rem; display: flex; justify-content: center; gap: 0.75rem; flex-wrap: wrap;">
+        <a href="/curator" style="display: inline-block; background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 0.65rem 1.4rem; border-radius: 9999px; text-decoration: none; font-weight: 700; font-size: 0.95rem; box-shadow: 0 4px 14px rgba(16,185,129,0.4);">
+          🎯 استوديو تصفية وتصنيف المحتوى المعترض (Curator Studio)
+        </a>
+        <a href="/downloads" style="display: inline-block; background: #6366f1; color: white; padding: 0.65rem 1.4rem; border-radius: 9999px; text-decoration: none; font-weight: 700; font-size: 0.95rem; box-shadow: 0 4px 14px rgba(99,102,241,0.4);">
           📂 عرض تقرير فحص مجلد التنزيلات بالكامل (284 صورة)
         </a>
       </div>
@@ -567,6 +571,44 @@ HTML_PAGE = """<!DOCTYPE html>
 
 class RequestHandler(BaseHTTPRequestHandler):
     def do_GET(self):
+        if self.path in ('/curator', '/curator/', '/review'):
+            curator_path = os.path.join(os.path.dirname(__file__), 'curator.html')
+            if os.path.exists(curator_path):
+                self.send_response(200)
+                self.send_header('Content-Type', 'text/html; charset=utf-8')
+                self.end_headers()
+                with open(curator_path, 'rb') as f:
+                    self.wfile.write(f.read())
+                return
+
+        if self.path.startswith('/api/curator/items'):
+            parsed = urllib.parse.urlparse(self.path)
+            qs = urllib.parse.parse_qs(parsed.query)
+            filter_type = qs.get('filter', ['all'])[0]
+            page = int(qs.get('page', ['1'])[0])
+            data = studio_engine.get_items(filter_type=filter_type, page=page)
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            self.wfile.write(json.dumps(data).encode('utf-8'))
+            return
+
+        if self.path.startswith('/curator-img/'):
+            filename = urllib.parse.unquote(self.path[len('/curator-img/'):])
+            img_bytes = studio_engine.get_image_bytes(filename)
+            if img_bytes:
+                self.send_response(200)
+                self.send_header('Content-Type', 'image/jpeg')
+                self.send_header('Cache-Control', 'max-age=86400')
+                self.end_headers()
+                self.wfile.write(img_bytes)
+                return
+            else:
+                self.send_response(404)
+                self.end_headers()
+                return
+
         if self.path in ('/dataset', '/dataset/', '/data'):
             report_path = os.path.join(os.path.dirname(__file__), 'dataset_report.html')
             if os.path.exists(report_path):
@@ -727,6 +769,30 @@ class RequestHandler(BaseHTTPRequestHandler):
             decision_agent = DecisionAgent()
             res = {'success': True, 'accuracy': acc}
             
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+        elif self.path == '/api/curator/label':
+            length = int(self.headers.get('content-length', 0))
+            body = self.rfile.read(length)
+            req = json.loads(body.decode('utf-8'))
+            item_id = req.get('item_id')
+            new_cat = req.get('category')
+            res = studio_engine.set_label(item_id, new_cat)
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            self.wfile.write(json.dumps(res).encode('utf-8'))
+
+        elif self.path == '/api/curator/retrain':
+            print("[CURATOR] Instant closed-form RLS retraining requested with human feedback...")
+            res = studio_engine.execute_instant_retrain()
+            # Live reload classifier and decision agent in memory
+            classifier = ProductionNSFWClassifier()
+            decision_agent = DecisionAgent()
+            print(f"[CURATOR] Model reloaded with updated weights! New Accuracy: {res.get('accuracy')}%")
             self.send_response(200)
             self.send_header('Content-Type', 'application/json')
             self.send_header('Access-Control-Allow-Origin', '*')
