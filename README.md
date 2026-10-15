@@ -72,24 +72,35 @@
 ```
 
 ### أ) الفضاء المتجهي متعدد الوسائط ($D = 1,284$):
-1. **برج الرؤية العميقة (Deep Vision Tower - $1,280\text{-dim}$):** يستخلص متجه التضمين البصري الشامل $e \in \mathbb{R}^{1280}$ عبر شبكة `PP-LCNet-050` فائقة الخفة مباشرة بعد طبقة التجميع المتوسط الشامل (`Global Average Pooling`).
-2. **برج الكشف التشريحي (Anatomical Detection Tower - $4\text{-dim}$):** يستخرج مؤشرات تشريحية مكانية مُطبّعة للجسد البشري:
-   $$a = \begin{bmatrix} s_{\text{exposed}}^{\max} \\ \sum s_{\text{exposed}} \\ s_{\text{suggestive}}^{\max} \\ s_{\text{face}}^{\max} \end{bmatrix} \in \mathbb{R}^4$$
-   حيث تُمثّل $s_{\text{exposed}}$ المناطق الحساسة المكشوفة صراحةً (بما في ذلك العورات المباشرة والأرداف المكشوفة `BUTTOCKS_EXPOSED`)، بينما تُمثّل $s_{\text{suggestive}}$ المناطق الإيحائية المغطاة جزئياً (مثل الصدر والأفخاذ).
+1. **برج الرؤية العميقة (Deep Vision Tower - 1,280-dim):** يستخلص متجه التضمين البصري الشامل $e \in \mathbb{R}^{1280}$ عبر شبكة `PP-LCNet-050` فائقة الخفة مباشرة بعد طبقة التجميع المتوسط الشامل (`Global Average Pooling`).
+2. **برج الكشف التشريحي (Anatomical Detection Tower - 4-dim):** يستخرج مؤشرات تشريحية مكانية مُطبّعة للجسد البشري:
+
+$$
+a = \left[ s_{\mathrm{exposed}}^{\max}, \; \sum s_{\mathrm{exposed}}, \; s_{\mathrm{suggestive}}^{\max}, \; s_{\mathrm{face}}^{\max} \right]^T \in \mathbb{R}^4
+$$
+
+حيث تُمثّل $s_{\mathrm{exposed}}$ المناطق الحساسة المكشوفة صراحةً (بما في ذلك العورات المباشرة والأرداف المكشوفة `BUTTOCKS_EXPOSED`)، بينما تُمثّل $s_{\mathrm{suggestive}}$ المناطق الإيحائية المغطاة جزئياً (مثل الصدر والأفخاذ).
 
 ### ب) المعايرة الرياضية عبر الحل المغلق للمربعات الصغرى المنتظمة (Closed-Form RLS):
 بدلاً من الاعتماد على التدرج التنازلي العشوائي (SGD) المعرض للركود في النهايات الصغرى المحلية، تمت معايرة الرأس التصنيفي المشترك بحل جبري مغلق ودقيق في خطوة واحدة (Single-Step Global Optimum):
-$$\hat{W} = \left( X^T \Omega X + \lambda I \right)^{-1} X^T \Omega Y$$
+
+$$
+\hat{W} = \left( X^T \Omega X + \lambda I \right)^{-1} X^T \Omega Y
+$$
+
 * **$X \in \mathbb{R}^{N \times 1284}$:** مصفوفة الخصائص المدمجة المستخلصة من $N = 5,414$ صورة نقية ومتوازنة.
 * **$\Omega \in \mathbb{R}^{N \times N}$:** مصفوفة قطرية لأوزان الأهمية العينية (Sample Importance Matrix)، حيث تُمنح الحالات الحدية الصعبة (Hard Negatives & UI Anchors) أوزاناً مضاعفة تصل إلى $\omega_i = 20.0$.
 * **$\lambda = 1.0$:** معامل انتظام تيكونوف ($L_2$ Tikhonov Regularization) لضمان استقرار المعكوس المصفوفي ومنع التخصيص الزائد (Overfitting).
 
-### ج) الأوزان التشريحية المكتشفة رياضياً ($W_{\text{anat}} \in \mathbb{R}^{5 \times 4}$):
-تُثبت الأوزان المستنتجة نجاح الفصل الخطي بين الفئات المتداخلة:
-* فئة **`sexy`**: $W[\text{max\_suggestive}] = \mathbf{+1.4441}$ ، $W[\text{max\_exposed}] = \mathbf{-1.1253}$
-* فئة **`drawings`**: $W[\text{max\_suggestive}] = \mathbf{-0.6683}$ ، $W[\text{max\_exposed}] = \mathbf{-0.6064}$
-* فئة **`porn`**: $W[\text{max\_exposed}] = \mathbf{+1.6220}$
-* فئة **`hentai`**: $W[\text{max\_exposed}] = \mathbf{+1.1261}$
+### ج) الأوزان التشريحية المكتشفة رياضياً ($W_{\mathrm{anat}} \in \mathbb{R}^{5 \times 4}$):
+تُثبت الأوزان المستنتجة نجاح الفصل الخطي الدقيق بين الفئات المتداخلة دون أي لبس:
+
+| الفئة (Category) | $W_{\mathrm{exposed}}$ (وزن كشف العورات) | $W_{\mathrm{suggestive}}$ (وزن اللباس الإيحائي) | السلوك الهندسي الحاسم |
+| :--- | :---: | :---: | :--- |
+| **`sexy`** | $\mathbf{-1.1253}$ | $\mathbf{+1.4441}$ | تعزيز ملابس السباحة والبكيني مع استبعاد الإباحية الصريحة |
+| **`drawings`** | $\mathbf{-0.6064}$ | $\mathbf{-0.6683}$ | قمع صارم لأي محتوى تشريحي لحماية الرسوم الكرتونية البريئة |
+| **`porn`** | $\mathbf{+1.6220}$ | $0.0000$ | تركيز قطعي على العورات الحقيقية المكشوفة |
+| **`hentai`** | $\mathbf{+1.1261}$ | $0.0000$ | كشف العورات المرسومة بالأسلوب ثنائي الأبعاد |
 
 ---
 
@@ -199,10 +210,10 @@ flutter run
 ## 📁 8. هيكلية المستودع (Repository Structure)
 
 ```text
-nsfw/
+nsfw_model/
 ├── README.md                              # التوثيق الهندسي الشامل (عربي / إنجليزي)
-├── LICENSE                                # وثيقة الترخيص (بشرط الإسناد العلني)
-├── .gitignore                             # استثناء الملفات المؤقتة وأوزان التدريب الخام
+├── LICENSE                                # وثيقة الترخيص (BSD 4-Clause)
+├── .gitignore                             # استثناء الملفات المؤقتة والبيانات الضخمة
 ├── requirements.txt                       # حزم بايثون اللازمة للاستدلال والتشغيل
 │
 ├── nsfw_lcnet050.onnx                     # نموذج الرؤية المعاير متعدد الوسائط (2.45 MB)
@@ -214,11 +225,6 @@ nsfw/
 ├── decision_agent.py                      # وكيل القرار الاستنتاجي لمنع الهلوسة البصرية
 ├── app.py                                 # خادم الويب ولوحة التحكم التفاعلية
 ├── test_live_server.py                    # جناح الاختبار المعياري المؤتمت (21 تحدياً)
-│
-├── train_1284_multimodal_rls.py           # خوارزمية التدريب وحل معادلات RLS المغلقة
-├── fetch_clean_cartoons_and_drawings.py   # أداة بناء وتنقية بيانات الكرتون والرسوم
-├── augment_and_anchor_cartoons.py         # توليد التحويلات البصرية لتعزيز ثبات النموذج
-├── expand_and_purify_dataset.py           # أتمتة توسيع وتنقية قاعدة البيانات التدريبية
 │
 ├── challenge_set/                         # مجموعة صور التحديات المعيارية (24 صورة)
 │
@@ -268,24 +274,35 @@ This architecture was designed from first principles to eliminate systemic failu
 The inference pipeline operates on a parallel **Dual-Tower Multimodal Architecture** that fuses global scene semantics with localized anatomical detection:
 
 ### A) 1,284-Dimensional Joint Feature Space:
-1. **Deep Vision Tower ($1,280\text{-dim}$):** Extracts a dense semantic embedding vector $e \in \mathbb{R}^{1280}$ from an ultra-lightweight `PP-LCNet-050` backbone immediately following the Global Average Pooling layer.
-2. **Anatomical Detection Tower ($4\text{-dim}$):** Computes a normalized spatial-anatomical feature vector via `NudeNet`:
-   $$a = \begin{bmatrix} s_{\text{exposed}}^{\max} \\ \sum s_{\text{exposed}} \\ s_{\text{suggestive}}^{\max} \\ s_{\text{face}}^{\max} \end{bmatrix} \in \mathbb{R}^4$$
-   Where $s_{\text{exposed}}$ tracks explicit anatomical exposure (genitalia and `BUTTOCKS_EXPOSED`), while $s_{\text{suggestive}}$ captures partially covered suggestive regions (breasts, thighs).
+1. **Deep Vision Tower (1,280-dim):** Extracts a dense semantic embedding vector $e \in \mathbb{R}^{1280}$ from an ultra-lightweight `PP-LCNet-050` backbone immediately following the Global Average Pooling layer.
+2. **Anatomical Detection Tower (4-dim):** Computes a normalized spatial-anatomical feature vector via `NudeNet`:
+
+$$
+a = \left[ s_{\mathrm{exposed}}^{\max}, \; \sum s_{\mathrm{exposed}}, \; s_{\mathrm{suggestive}}^{\max}, \; s_{\mathrm{face}}^{\max} \right]^T \in \mathbb{R}^4
+$$
+
+Where $s_{\mathrm{exposed}}$ tracks explicit anatomical exposure (genitalia and `BUTTOCKS_EXPOSED`), while $s_{\mathrm{suggestive}}$ captures partially covered suggestive regions (breasts, thighs).
 
 ### B) Closed-Form Regularized Ridge Least Squares (RLS) Calibration:
 Rather than relying on stochastic gradient descent (which is prone to local minima and catastrophic forgetting), the joint classification head is solved analytically in a single global step:
-$$\hat{W} = \left( X^T \Omega X + \lambda I \right)^{-1} X^T \Omega Y$$
+
+$$
+\hat{W} = \left( X^T \Omega X + \lambda I \right)^{-1} X^T \Omega Y
+$$
+
 * **$X \in \mathbb{R}^{5414 \times 1284}$:** Purified, class-balanced multimodal design matrix.
 * **$\Omega \in \mathbb{R}^{5414 \times 5414}$:** Diagonal sample importance matrix assigning up to $\omega_i = 20.0$ for hard-negative UI assets and boundary anchors.
 * **$\lambda = 1.0$:** Tikhonov $L_2$ regularization parameter ensuring numerical stability and strong generalization.
 
-### C) Analytically Derived Anatomical Weights ($W_{\text{anat}} \in \mathbb{R}^{5 \times 4}$):
+### C) Analytically Derived Anatomical Weights ($W_{\mathrm{anat}} \in \mathbb{R}^{5 \times 4}$):
 The closed-form solver naturally discovers interpretable physical constraints across classes:
-* **`sexy`**: $W[\text{max\_suggestive}] = \mathbf{+1.4441}$, $W[\text{max\_exposed}] = \mathbf{-1.1253}$
-* **`drawings`**: $W[\text{max\_suggestive}] = \mathbf{-0.6683}$, $W[\text{max\_exposed}] = \mathbf{-0.6064}$
-* **`porn`**: $W[\text{max\_exposed}] = \mathbf{+1.6220}$
-* **`hentai`**: $W[\text{max\_exposed}] = \mathbf{+1.1261}$
+
+| Class | $W_{\mathrm{exposed}}$ (Explicit Anatomy) | $W_{\mathrm{suggestive}}$ (Suggestive Cover) | Physical Interpretation |
+| :--- | :---: | :---: | :--- |
+| **`sexy`** | $\mathbf{-1.1253}$ | $\mathbf{+1.4441}$ | Elevates bikinis/swimwear while repelling explicit acts |
+| **`drawings`** | $\mathbf{-0.6064}$ | $\mathbf{-0.6683}$ | Heavily penalizes any intimate anatomy in safe cartoons |
+| **`porn`** | $\mathbf{+1.6220}$ | $0.0000$ | Decisive positive attribution on real exposed genitalia |
+| **`hentai`** | $\mathbf{+1.1261}$ | $0.0000$ | Positive attribution on exposed 2D illustrated erotica |
 
 ---
 
