@@ -246,11 +246,22 @@ func (a *DeductiveAgent) Decide(probs map[string]float32) (action string, conf f
 		}
 	}
 
-	// Rule 3: Suggestive & Swimwear Protection
-	if bestCat == "sexy" && maxProb >= 0.45 {
+	// Rule 3: Suggestive & Swimwear Protection (High confidence >= 0.65)
+	if bestCat == "sexy" && maxProb >= 0.65 {
 		return "sexy", maxProb, true,
 			"Suggestive lingerie or exposed swimwear detected.",
 			[]string{"SUGGESTIVE_SWIMWEAR_RESTRICTION"}, false
+	}
+
+	// Rule 3.5: False Suggestive Demotion for Inanimate Objects / Polished Leather (< 0.65)
+	if bestCat == "sexy" && maxProb < 0.65 {
+		targetCat := "neutral"
+		if probs["drawings"] > probs["neutral"] {
+			targetCat = "drawings"
+		}
+		return targetCat, maxProb, false,
+			fmt.Sprintf("Unconfirmed suggestive prediction (%.2f) on inanimate setting demoted to %s.", maxProb, targetCat),
+			[]string{"FALSE_SUGGESTIVE_DEMOTED"}, true
 	}
 
 	// Rule 4: Shield for Cartoon Drawings & Neutral Illustrations
