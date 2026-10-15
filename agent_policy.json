@@ -1,0 +1,15 @@
+{
+  "porn_demote_to_sexy_max_conf": 0.75,
+  "porn_demote_to_sexy_min_conf": 0.5,
+  "exposed_threshold": 0.4,
+  "covered_threshold": 0.35,
+  "sexy_elevation_threshold": 0.28,
+  "class_biases": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+  ],
+  "temperature": 1.0
+}

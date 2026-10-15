@@ -1,0 +1,25 @@
+BSD 4-Clause License
+
+Copyright (c) 2026, Eren
+All rights reserved.
+
+Redistribution and use in source and binary forms, including models and weights, 
+with or without modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this 
+   list of conditions and the following disclaimer.
+2. Redistributions in binary form or model deployments must reproduce the above 
+   copyright notice, this list of conditions and the following disclaimer in the 
+   documentation and/or other materials provided with the distribution.
+3. All advertising materials, user interfaces, and public documentation mentioning 
+   features or use of this software/model must display the following acknowledgement:
+   "This product includes software/models developed by Eren."
+4. Neither the name of the copyright holder nor the names of its contributors may 
+   be used to endorse or promote products derived from this software without 
+   specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDER "AS IS" AND ANY EXPRESS OR 
+IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF 
+MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT 
+SHALL THE COPYRIGHT HOLDER BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, 
+EXEMPLARY, OR CONSEQUENTIAL DAMAGES.

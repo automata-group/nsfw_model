@@ -1,0 +1,41 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Caching & Local Heavy Data (Over GitHub Limits)
+*.pkl
+dataset/
+downloads_classified.json
+downloads_report.html
+dataset_report.html
+
+# Virtual Environments
+.venv/
+venv/
+ENV/
+env/
+
+# Operating System & IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+
+# Logs & Temporary Files
+*.log
+tmp/
+scratch/
+
+# Golang Binaries
+moderation-server
+moderation-server.exe
+*.exe
+
+# Flutter & Dart Build Artifacts
+.dart_tool/
+.packages
+build/
+.pub-cache/
+.pub/

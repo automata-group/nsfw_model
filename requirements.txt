@@ -1,0 +1,12 @@
+# Core Production Inference Dependencies
+onnxruntime>=1.16.0
+numpy>=1.23.0,<2.0.0
+Pillow>=9.5.0
+
+# Server & Benchmark Utilities
+requests>=2.28.0
+tqdm>=4.65.0
+
+# Optional: Training & Calibration Pipeline
+scipy>=1.10.0
+scikit-learn>=1.2.0
