@@ -217,17 +217,24 @@ func (a *DeductiveAgent) Decide(probs map[string]float32) (action string, conf f
 	}
 
 	// Rule 1: High Confidence Hentai / 2D Anime NSFW Guard
-	if bestCat == "hentai" && maxProb >= 0.70 {
+	if bestCat == "hentai" && maxProb >= 0.50 {
 		return "hentai", maxProb, true,
 			"High-confidence 2D Hentai artwork verified.",
 			[]string{"CONFIRMED_HENTAI_RESTRICTION"}, false
 	}
 
-	// Rule 2: Explicit Adult (Porn / Hentai) Threshold
-	if (bestCat == "porn" || bestCat == "hentai") && maxProb >= 0.40 {
+	// Rule 2: Explicit Adult (Porn) Threshold
+	if bestCat == "porn" && maxProb >= 0.40 {
 		return bestCat, maxProb, true,
 			fmt.Sprintf("Confirmed explicit adult content (%s: %.2f)", bestCat, maxProb),
 			[]string{"EXPLICIT_ADULT_THRESHOLD"}, false
+	}
+
+	// Rule 2.5: Weak Hentai Hallucination Protection for Game Assets / Armor / Drawings
+	if bestCat == "hentai" && maxProb < 0.50 {
+		return "drawings", maxProb, false,
+			fmt.Sprintf("Weak hentai prediction (%.2f) on stylized asset demoted to safe drawings.", maxProb),
+			[]string{"FALSE_HENTAI_DEMOTED_TO_DRAWING"}, true
 	}
 
 	// Rule 3: Suggestive & Swimwear Protection
