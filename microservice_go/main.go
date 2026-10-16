@@ -230,19 +230,31 @@ func (a *DeductiveAgent) Decide(probs map[string]float32) (action string, conf f
 			[]string{"EXPLICIT_ADULT_THRESHOLD"}, false
 	}
 
-	// Rule 2.5: Weak Hentai Hallucination Protection for Game Assets / Armor
-	// Demote to drawings ONLY if explicit adult mass (hentai + porn) < 0.42 and porn < 0.10 and safe mass >= 0.42
-	if bestCat == "hentai" && maxProb < 0.50 {
+	// Rule 2.5: Weak Hentai Hallucination Protection for Game Assets & Scientific Diagrams (< 0.70)
+	if bestCat == "hentai" && maxProb < 0.70 {
 		explicitAdult := probs["hentai"] + probs["porn"]
 		safeMass := probs["drawings"] + probs["neutral"]
+		pornVal := probs["porn"]
+		sexyVal := probs["sexy"]
+
+		// 1. Scientific / Technical Diagram condition
+		isScientific := (pornVal+sexyVal) < 0.04 && safeMass >= 0.35
+
+		// 2. Inanimate Game Asset condition
 		margin := probs["hentai"] - probs["drawings"]
 		if probs["neutral"] > probs["drawings"] {
 			margin = probs["hentai"] - probs["neutral"]
 		}
-		if explicitAdult < 0.42 && probs["porn"] < 0.10 && safeMass >= 0.42 && margin < 0.06 {
-			return "drawings", maxProb, false,
-				fmt.Sprintf("Weak hentai artifact (%.2f) on non-erotic asset demoted to safe drawings.", maxProb),
-				[]string{"FALSE_HENTAI_DEMOTED_TO_DRAWING"}, true
+		isGameAsset := maxProb < 0.50 && explicitAdult < 0.42 && pornVal < 0.10 && safeMass >= 0.42 && margin < 0.06
+
+		if isScientific || isGameAsset {
+			targetCat := "neutral"
+			if probs["drawings"] > probs["neutral"] {
+				targetCat = "drawings"
+			}
+			return targetCat, maxProb, false,
+				fmt.Sprintf("Non-erotic artifact (%.2f) without adult indicators demoted to safe %s.", maxProb, targetCat),
+				[]string{"FALSE_HENTAI_DEMOTED"}, true
 		}
 	}
 
