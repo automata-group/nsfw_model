@@ -267,13 +267,18 @@ func (a *DeductiveAgent) Decide(probs map[string]float32) (action string, conf f
 
 	// Rule 3.5: False Suggestive Demotion for Inanimate Objects / Polished Leather (< 0.65)
 	if bestCat == "sexy" && maxProb < 0.65 {
-		targetCat := "neutral"
-		if probs["drawings"] > probs["neutral"] {
-			targetCat = "drawings"
+		pornVal := probs["porn"]
+		nsfwMass := probs["sexy"] + probs["porn"] + probs["hentai"]
+		safeMass := probs["neutral"] + probs["drawings"]
+		if pornVal < 0.08 && nsfwMass <= safeMass*1.5 {
+			targetCat := "neutral"
+			if probs["drawings"] > probs["neutral"] {
+				targetCat = "drawings"
+			}
+			return targetCat, maxProb, false,
+				fmt.Sprintf("Unconfirmed suggestive prediction (%.2f) on inanimate setting demoted to %s.", maxProb, targetCat),
+				[]string{"FALSE_SUGGESTIVE_DEMOTED"}, true
 		}
-		return targetCat, maxProb, false,
-			fmt.Sprintf("Unconfirmed suggestive prediction (%.2f) on inanimate setting demoted to %s.", maxProb, targetCat),
-			[]string{"FALSE_SUGGESTIVE_DEMOTED"}, true
 	}
 
 	// Rule 4: Shield for Cartoon Drawings & Neutral Illustrations
